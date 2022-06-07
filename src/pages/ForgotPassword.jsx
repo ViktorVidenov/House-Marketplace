@@ -3,14 +3,11 @@ import { Link } from 'react-router-dom'
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth'
 import { toast } from 'react-toastify'
 import { ReactComponent as ArrowRightIcon } from '../assets/svg/keyboardArrowRightIcon.svg'
-import { toHaveStyle } from '@testing-library/jest-dom/dist/matchers'
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
 
-  const onChange = e => {
-
-  }
+  const onChange = (e) => setEmail(e.target.value)
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -18,7 +15,7 @@ function ForgotPassword() {
     try {
       const auth = getAuth()
       await sendPasswordResetEmail(auth, email)
-      toHaveStyle.succes('Email was sent')
+      toast.success('Email was sent')
     } catch (error) {
       toast.error('Could not send reset email')
     }
