@@ -11,7 +11,7 @@ function ForgotPassword() {
 
   const onSubmit = async (e) => {
     e.preventDefault()
-
+ 
     try {
       const auth = getAuth()
       await sendPasswordResetEmail(auth, email)
