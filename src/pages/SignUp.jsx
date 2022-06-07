@@ -31,7 +31,7 @@ function SignUp() {
     try {
       const auth = getAuth()
 
-      const userCredential = createUserWithEmailAndPassword(auth, email, password)
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
       const user = userCredential.user
       updateProfile(auth.currentUser, {
         displayName: name
@@ -40,7 +40,8 @@ function SignUp() {
       const formDataCopy = { ...formData }
       delete formDataCopy.password
       formDataCopy.timestamp = serverTimestamp()
-      await setDoc(doc(db, 'users', 'user.uid'), formDataCopy)
+      
+      await setDoc(doc(db, 'users', user.uid), formDataCopy)
 
       navigate('/')
     } catch (error) {
