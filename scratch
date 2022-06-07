@@ -13,7 +13,7 @@ service cloud.firestore {
     match /users/{user} {
     	allow read;
     	allow create;
-    	allow update: if request.auth.uid == user
+    	allow update: if request.auth.uid == userr
     }
   }
 }
