@@ -6,6 +6,7 @@ import { setDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase.config'
 import { ReactComponent as ArrowRightIcon } from '../assets/svg/keyboardArrowRightIcon.svg'
 import visibilityIcon from '../assets/svg/visibilityIcon.svg'
+import OAuth from '../components/OAuth'
 
 function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
@@ -40,7 +41,7 @@ function SignUp() {
       const formDataCopy = { ...formData }
       delete formDataCopy.password
       formDataCopy.timestamp = serverTimestamp()
-      
+
       await setDoc(doc(db, 'users', user.uid), formDataCopy)
 
       navigate('/')
@@ -50,73 +51,74 @@ function SignUp() {
   }
 
   return (
-    <div className="pageContainer">
-      <header>
-        <p className="pageHeader">
-          Welcome Back!
-        </p>
-      </header>
-      <form onSubmit={onSubmit}>
-        <input
-          type="text"
-          id="name"
-          value={name}
-          className='nameInput'
-          placeholder='Name'
-          onChange={onChange}
-        />
-
-        <input
-          type="email"
-          id="email"
-          value={email}
-          className='emailInput'
-          placeholder='Email'
-          onChange={onChange}
-        />
-
-        <div className="paswordInputDiv">
+    <>
+      <div className="pageContainer">
+        <header>
+          <p className="pageHeader">
+            Welcome Back!
+          </p>
+        </header>
+        <form onSubmit={onSubmit}>
           <input
-            type={showPassword ? 'text' : 'password'}
-            id='password'
-            value={password}
-            className='passwordInput'
-            placeholder='Password'
+            type="text"
+            id="name"
+            value={name}
+            className='nameInput'
+            placeholder='Name'
             onChange={onChange}
           />
-          <img
-            src={visibilityIcon}
-            alt="Shwow password"
-            className='showPassword'
-            onClick={() => setShowPassword((prevState) => !prevState)}
+
+          <input
+            type="email"
+            id="email"
+            value={email}
+            className='emailInput'
+            placeholder='Email'
+            onChange={onChange}
           />
 
-          <Link
-            to='forgot-passowrd'
-            className='forgotPasswordLink'>
-            Forgot Password
-          </Link>
-        </div>
-
-        <div className="signUpBar">
-          <p className="signUpText">
-            Sign Up
-          </p>
-          <button className="signUpButton">
-            <ArrowRightIcon
-              fill='#ffffff'
-              width='34px'
-              height='34px'
+          <div className="paswordInputDiv">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id='password'
+              value={password}
+              className='passwordInput'
+              placeholder='Password'
+              onChange={onChange}
             />
-          </button>
-        </div>
-      </form>
-      {/*GOOGLE OAUTH*/}
+            <img
+              src={visibilityIcon}
+              alt="Shwow password"
+              className='showPassword'
+              onClick={() => setShowPassword((prevState) => !prevState)}
+            />
 
-      <Link to='/sign-in' className='registerLink'>
-        Sign In Instead
-      </Link>
-    </div>
+            <Link to='/forgot-password'
+              className='forgotPasswordLink'>
+              Forgot Password
+            </Link>
+          </div>
+
+          <div className="signUpBar">
+            <p className="signUpText">
+              Sign Up
+            </p>
+            <button className="signUpButton">
+              <ArrowRightIcon
+                fill='#ffffff'
+                width='34px'
+                height='34px'
+              />
+            </button>
+          </div>
+        </form>
+        <OAuth />
+
+        <Link to='/sign-in' className='registerLink'>
+          Sign In Instead
+        </Link>
+      </div>
+    </>
   )
 }
 
