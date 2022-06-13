@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, } from 'firebase/storage'
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
+import { db } from '../firebase.config'
+import { v4 as uuidv4 } from 'uuid'
 import { useNavigate } from 'react-router-dom'
 import Spinner from '../components/Spinner'
+import { toast } from 'react-toastify'
 
 
 function CreateListing() {
@@ -58,11 +63,112 @@ function CreateListing() {
             isMounted.current = false
         }
 
-
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isMounted])
 
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
         e.preventDefault()
+
+        setLoading(true)
+
+        if (discountedPrice >= regularPrice) {
+            setLoading(false)
+            toast.error('Discounted price needs to be less than regular price')
+            return
+        }
+        if (images.length > 6) {
+            setLoading(false)
+            toast.error('Max 6 images')
+        }
+
+        let geolocation = {}
+        let location
+
+        if (geoLocationEnabled) {
+            const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${process.env.REACT_APP_GEOCODE_API_KEY}`)
+
+            const data = await response.json()
+            geolocation.lat = data.results[0]?.geometry.location.lat ?? 0
+            geolocation.lng = data.results[0]?.geometry.location.lng ?? 0
+
+            location = data.status === 'ZERO_RESULTS' ? undefined : data.results[0]?.formatted_address
+
+            if (location === undefined || location.includes('undefined')) {
+                setLoading(false)
+                toast.error('Please enter a correct address')
+                return
+            }
+        } else {
+            geolocation.lat = latitude
+            geolocation.lng = longitude
+            location = address
+        }
+
+        //Gladston 45 Vidin Bulgaria
+        //Stora image in firebase 
+        const storeImage = async (image) => {
+            return new Promise((resolve, reject) => {
+                //Get the reff to storage in Firbase
+                const storage = getStorage()
+                const fileName = `${auth.currentUser.uid}-${image.name}-${uuidv4()}`
+
+                const storageRef = ref(storage, 'images/' + fileName)
+
+                const uploadTask = uploadBytesResumable(storageRef, image)
+
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        // Observe state change events such as progress, pause, and resume
+                        // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        // console.log('Upload is ' + progress + '% done');
+                        switch (snapshot.state) {
+                            case 'paused':
+                                // console.log('Upload is paused');
+                                break;
+                            case 'running':
+                                // console.log('Upload is running');
+                                break;
+                        }
+                    },
+                    (error) => {
+                        // Handle unsuccessful uploads
+                        reject(error)
+                    },
+                    () => {
+                        // Handle successful uploads on complete
+                        // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+                        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                            resolve(downloadURL);
+                        });
+                    }
+                );
+            })
+        }
+        const imgUrls = await Promise.all(
+            [...images].map((image) => storeImage(image))
+        ).catch(() => {
+            setLoading(false)
+            toast.error('Images not uploaded')
+            return;
+        })
+
+        const formDataCopy = {
+            ...formData,
+            imgUrls,
+            geolocation,
+            timestamp: serverTimestamp()
+        }
+
+        delete formDataCopy.images
+        delete formDataCopy.address
+        location && (formDataCopy.location = location)
+        !formDataCopy.offer && delete formDataCopy.discountedPrice
+
+        const docRef = await addDoc(collection(db, 'listings'), formDataCopy)
+        setLoading(false)
+        toast.success('Listing saved')
+        navigate(`/category/${formDataCopy.type}/${docRef}`)
     }
 
     const onMutate = (e) => {
@@ -113,7 +219,7 @@ function CreateListing() {
                         <button
                             type='button'
                             className={type === 'sale' ? 'formButtonActive' : 'formButton'}
-                            // id are important, because that's when we set our state, you know, on the onChange or on clicks it's going to look at the ID for it to be the key
+                            // id are important, because that's when we set our state, on the onChange or on clicks it's going to look at the ID for it to be the key
                             id='type'
                             value='sale'
                             onClick={onMutate}
@@ -336,7 +442,7 @@ function CreateListing() {
                         The first image will be the cover (max 6).
                     </p>
                     <input
-                        className='formInputFile'
+                        className='formInputFile custom-class'
                         type='file'
                         id='images'
                         onChange={onMutate}
